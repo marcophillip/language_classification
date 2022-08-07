@@ -41,7 +41,9 @@ class TransformerBlock(layers.Layer):
         super(TransformerBlock, self).__init__()
         self.att = layers.MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim)
         self.ffn = keras.Sequential(
-            [layers.Dense(ff_dim, activation="relu"), layers.Dense(embed_dim),]
+            [layers.Dense(ff_dim, activation="relu"),
+             layers.Dense(ff_dim*2, activation="relu"),
+             layers.Dense(embed_dim),]
         )
         self.layernorm1 = layers.LayerNormalization(epsilon=1e-6)
         self.layernorm2 = layers.LayerNormalization(epsilon=1e-6)
@@ -63,7 +65,7 @@ class TransformerBlock(layers.Layer):
 class TokenAndPositionEmbedding(layers.Layer):
     def __init__(self, maxlen, vocab_size, embed_dim):
         super(TokenAndPositionEmbedding, self).__init__()
-        self.token_emb = layers.Embedding(input_dim=vocab_size, output_dim=embed_dim)
+        self.token_emb = layers.Embedding(input_dim=vocab_size, output_dim=embed_dim,mask_zero=True)
         self.pos_emb = layers.Embedding(input_dim=maxlen, output_dim=embed_dim)
 
     def call(self, x):
@@ -71,16 +73,14 @@ class TokenAndPositionEmbedding(layers.Layer):
         positions = tf.range(start=0, limit=maxlen, delta=1)
         positions = self.pos_emb(positions)
         x = self.token_emb(x)
-        mask = self.token_emb.compute_mask(x)
-        # mask = mask[:, tf.newaxis, tf.newaxis, :]
         return x + positions
 
 
 
 def transformer():
-    embed_dim =32  # Embedding size for each token
-    num_heads = 10 # Number of attention heads
-    ff_dim = 64  # Hidden layer size in feed forward network inside transformer
+    embed_dim =16  # Embedding sizor each token
+    num_heads = 6 # Number of attention heads
+    ff_dim = 32  # Hidden layer size in feed forward network inside transformer
 
     inputs = layers.Input(shape=(max_length,))
     embedding_layer = TokenAndPositionEmbedding(max_length, count, embed_dim)
@@ -88,8 +88,8 @@ def transformer():
     transformer_block = TransformerBlock(embed_dim, num_heads, ff_dim)
     x = transformer_block(x)
     x = layers.GlobalAveragePooling1D()(x)
-#     x = layers.Dropout(0.3)(x)
-    x = layers.Dense(32, activation="relu")(x)
+#     x = layers.Dropout(0.4)(x)
+#     x = layers.Dense(32, activation="relu")(x)
 #     x = layers.Dropout(0.3)(x)
     outputs = layers.Dense(6, activation="softmax")(x)
 

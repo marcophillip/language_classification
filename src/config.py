@@ -1,4 +1,4 @@
 class Config:
-    max_length:int=16
-    count:int=91517
+    max_length:int=10
+    count:int=57202
 
